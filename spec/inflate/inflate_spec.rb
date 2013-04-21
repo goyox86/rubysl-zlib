@@ -1,6 +1,5 @@
 # -*- encoding: US-ASCII -*-
 require 'zlib'
-require File.expand_path('../../../../spec_helper', __FILE__)
 
 describe "Zlib::Inflate#inflate" do
 
