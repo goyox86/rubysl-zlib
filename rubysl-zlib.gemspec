@@ -3,7 +3,7 @@ require './lib/rubysl/zlib/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "rubysl-zlib"
-  spec.version       = Rubysl::Zlib::VERSION
+  spec.version       = RubySL::Zlib::VERSION
   spec.authors       = ["Brian Shirai"]
   spec.email         = ["brixen@gmail.com"]
   spec.description   = %q{Ruby standard library zlib.}
