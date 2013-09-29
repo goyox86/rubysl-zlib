@@ -59,6 +59,6 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
   have_func('adler32_combine', 'zlib.h')
   have_type('z_crc_t', 'zlib.h')
 
-  create_makefile('zlib')
+  create_makefile('zlib/zlib')
 
 end
