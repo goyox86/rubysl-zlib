@@ -6,6 +6,8 @@
  * $Id: zlib.c 42720 2013-08-28 20:36:21Z drbrain $
  */
 
+#define RSTRING_NOT_MODIFIED 1
+
 #include <ruby.h>
 #include <zlib.h>
 #include <time.h>
