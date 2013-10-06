@@ -1000,12 +1000,8 @@ zstream_run_func(void *ptr)
 	    break;
 	}
 
-	if (args->stream_output) {
-	    state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
-							(void *)z);
-	} else {
-	    state = zstream_expand_buffer_without_gvl(z);
-	}
+	state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
+						    (void *)z);
 
 	if (state) {
 	    err = Z_OK; /* buffer expanded but stream processing was stopped */
