@@ -2258,11 +2258,13 @@ gzfile_reset(struct gzfile *gz)
     gz->crc = crc32(0, Z_NULL, 0);
     gz->lineno = 0;
     gz->ungetc = 0;
+    /* TODO: Encodings
     if (gz->ec) {
 	rb_econv_close(gz->ec);
 	gz->ec = rb_econv_open_opts(gz->enc2->name, gz->enc->name,
 				    gz->ecflags, gz->ecopts);
     }
+    */
 }
 
 static void
@@ -2638,6 +2640,7 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
 	OBJ_TAINT(str);  /* for safe */
 	return str;
     }
+    /* TODO: Encodings
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
         str = rb_econv_str_convert(gz->ec, str, ECONV_PARTIAL_INPUT);
 	rb_enc_associate(str, gz->enc);
@@ -2646,6 +2649,8 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
     }
     return rb_str_conv_enc_opts(str, gz->enc2, gz->enc,
 				gz->ecflags, gz->ecopts);
+    */
+    return str;
 }
 
 static long
@@ -2762,6 +2767,7 @@ gzfile_getc(struct gzfile *gz)
 	return Qnil;
     }
 
+    /* TODO: Encodings
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
 	const unsigned char *ss, *sp, *se;
 	unsigned char *ds, *dp, *de;
@@ -2783,12 +2789,15 @@ gzfile_getc(struct gzfile *gz)
 	return dst;
     }
     else {
+    */
 	buf = gz->z.buf;
 	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), gz->enc);
 	dst = gzfile_read(gz, len);
 	if (NIL_P(dst)) return dst;
 	return gzfile_newstr(gz, dst);
+  /* TODO: Encodings
     }
+  */
 }
 
 static void
@@ -3351,6 +3360,7 @@ rb_gzfile_path(VALUE obj)
 static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
+  /* TODO: Encodings
     if (!NIL_P(opts)) {
 	rb_io_extract_encoding_option(opts, &gz->enc, &gz->enc2, NULL);
     }
@@ -3360,6 +3370,7 @@ rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 				    gz->ecflags, opts);
 	gz->ecopts = opts;
     }
+  */
 }
 
 /* ------------------------------------------------------------------------- */
