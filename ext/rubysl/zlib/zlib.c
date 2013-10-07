@@ -6,6 +6,8 @@
  * $Id: zlib.c 42720 2013-08-28 20:36:21Z drbrain $
  */
 
+#define RSTRING_NOT_MODIFIED 1
+
 #include <ruby.h>
 #include <zlib.h>
 #include <time.h>
@@ -698,39 +700,6 @@ zstream_expand_buffer_protect(void *ptr)
     return (void *)(VALUE)state;
 }
 
-static int
-zstream_expand_buffer_without_gvl(struct zstream *z)
-{
-    char * new_str;
-    long inc, len;
-
-    if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
-	z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
-    }
-    else {
-	inc = z->buf_filled / 2;
-	if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
-	    inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
-	}
-
-	len = z->buf_filled + inc;
-
-	new_str = ruby_xrealloc(RSTRING(z->buf)->as.heap.ptr, len + 1);
-
-	/* from rb_str_resize */
-	RSTRING(z->buf)->as.heap.ptr = new_str;
-	RSTRING(z->buf)->as.heap.ptr[len] = '\0'; /* sentinel */
-	RSTRING(z->buf)->as.heap.len =
-	    RSTRING(z->buf)->as.heap.aux.capa = len;
-
-	z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
-	    (int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
-    }
-    z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
-
-    return ZSTREAM_EXPAND_BUFFER_OK;
-}
-
 static void
 zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 {
@@ -998,12 +967,8 @@ zstream_run_func(void *ptr)
 	    break;
 	}
 
-	if (args->stream_output) {
-	    state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
-							(void *)z);
-	} else {
-	    state = zstream_expand_buffer_without_gvl(z);
-	}
+	state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
+						    (void *)z);
 
 	if (state) {
 	    err = Z_OK; /* buffer expanded but stream processing was stopped */
@@ -2293,11 +2258,13 @@ gzfile_reset(struct gzfile *gz)
     gz->crc = crc32(0, Z_NULL, 0);
     gz->lineno = 0;
     gz->ungetc = 0;
+    /* TODO: Encodings
     if (gz->ec) {
 	rb_econv_close(gz->ec);
 	gz->ec = rb_econv_open_opts(gz->enc2->name, gz->enc->name,
 				    gz->ecflags, gz->ecopts);
     }
+    */
 }
 
 static void
@@ -2673,6 +2640,7 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
 	OBJ_TAINT(str);  /* for safe */
 	return str;
     }
+    /* TODO: Encodings
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
         str = rb_econv_str_convert(gz->ec, str, ECONV_PARTIAL_INPUT);
 	rb_enc_associate(str, gz->enc);
@@ -2681,6 +2649,8 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
     }
     return rb_str_conv_enc_opts(str, gz->enc2, gz->enc,
 				gz->ecflags, gz->ecopts);
+    */
+    return str;
 }
 
 static long
@@ -2797,6 +2767,7 @@ gzfile_getc(struct gzfile *gz)
 	return Qnil;
     }
 
+    /* TODO: Encodings
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
 	const unsigned char *ss, *sp, *se;
 	unsigned char *ds, *dp, *de;
@@ -2818,12 +2789,15 @@ gzfile_getc(struct gzfile *gz)
 	return dst;
     }
     else {
+    */
 	buf = gz->z.buf;
 	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), gz->enc);
 	dst = gzfile_read(gz, len);
 	if (NIL_P(dst)) return dst;
 	return gzfile_newstr(gz, dst);
+  /* TODO: Encodings
     }
+  */
 }
 
 static void
@@ -3386,6 +3360,7 @@ rb_gzfile_path(VALUE obj)
 static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
+  /* TODO: Encodings
     if (!NIL_P(opts)) {
 	rb_io_extract_encoding_option(opts, &gz->enc, &gz->enc2, NULL);
     }
@@ -3395,6 +3370,7 @@ rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 				    gz->ecflags, opts);
 	gz->ecopts = opts;
     }
+  */
 }
 
 /* ------------------------------------------------------------------------- */
