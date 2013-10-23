@@ -1,2 +1,2 @@
-require "zlib/zlib"
+require "rubysl/zlib/zlib"
 require "rubysl/zlib/version"
