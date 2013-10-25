@@ -79,6 +79,8 @@
 #   Zlib::OS_UNKNOWN
 #       The return values of Zlib::GzipFile#os_code method.
 
+require 'rubinius/ffi'
+
 module Zlib
 
   @@@
@@ -580,9 +582,7 @@ module Zlib
 
   extend FFI::Library
 
-  ffi_lib %W[ #{Rubinius::ZLIB_PATH}libz.so.1
-              #{Rubinius::ZLIB_PATH}libz.1.dylib
-              #{Rubinius::ZLIB_PATH}libz ]
+  ffi_lib %W[ libz.so.1 libz.1.dylib libz ]
 
   # deflateInit2 is a macro pointing to deflateInit2_
   attach_function :deflateInit2_, [
@@ -619,9 +619,12 @@ module Zlib
   attach_function :inflateReset,    [:pointer],       :int
   attach_function :inflateSetDictionary, [:pointer, :string, :uint], :int
 
-  attach_function :adler32_c,       "adler32",  [:ulong, :string, :uint], :ulong
-  attach_function :crc32_c,         "crc32",    [:ulong, :string, :uint], :ulong
-  attach_function :get_crc_table_c, "get_crc_table", [], :pointer
+  attach_function :zlib_version, :zlibVersion, [], :string
+  attach_function :z_adler32, :adler32 , [:ulong, :string, :uint], :ulong
+  attach_function :z_adler32_combine, :adler32_combine , [:ulong, :ulong, :long], :ulong
+  attach_function :z_crc32, :crc32 , [:ulong, :string, :uint], :ulong
+  attach_function :z_crc32_combine, :crc32_combine , [:ulong, :ulong, :long], :ulong
+  attach_function :z_get_crc_table, :get_crc_table , [], :pointer
 
   attach_function :zError, [:int], :string
 
@@ -1400,7 +1403,7 @@ module Zlib
       data = String data
 
       if data.length > 0 or sync? then
-        @crc = Zlib.crc32_c @crc, data, data.length
+        @crc = Zlib.z_crc32 @crc, data, data.length
 
         flush = sync? ? Zlib::SYNC_FLUSH : Zlib::NO_FLUSH
 
@@ -1563,16 +1566,15 @@ module Zlib
   # +adler+. If +string+ is omitted, it returns the Adler-32 initial value. If
   # +adler+ is omitted, it assumes that the initial value is given to +adler+.
 
-  def self.adler32(string = "", sum = 1)
-    do_checksum(string, sum, :adler32_c)
+  def self.adler32(string = "", adler = 1)
+    z_adler32(adler, string, string.length)
   end
 
   ##
   # Returns the table for calculating CRC checksum as an array.
 
   def self.crc_table
-    type = FFI.size_to_type(Rubinius::ZLIB_CRC_TABLE_SIZE)
-    get_crc_table_c.send(:"read_array_of_u#{type}", 256)
+    z_get_crc_table.read_array_of_long(256)
   end
 
   ##
@@ -1580,25 +1582,26 @@ module Zlib
   # If +string+ is omitted, it returns the CRC initial value. If +crc+ is
   # omitted, it assumes that the initial value is given to +crc+.
 
-  def self.crc32(string = "", sum = 0)
-    do_checksum(string, sum, :crc32_c)
+  def self.crc32(string = "", crc = 0)
+    z_crc32(crc, string, string.length)
   end
 
   ##
-  # Generates a checksum using function +type+
+  # Combine two Adler-32 check values in to one. +alder1+ is the first Adler-32
+  # value, +adler2+ is the second Adler-32 value. +len+ is the length of the
+  # string used to generate +adler2+.
 
-  def self.do_checksum(string, vsum, type)
-    if vsum
-      raise RangeError if vsum >= (2 ** 128)
-      raise "Explain why you did this: email ephoenix@engineyard.com" if vsum < 0
-      sum = vsum
-    elsif string.nil?
-      sum = 0
-    else
-      sum = send(type, 0, nil, 0)
-    end
+  def self.adler32_combine(adler1, adler2, len)
+    z_adler32_combine(adler1, adler2, len)
+  end
 
-    send(type, sum, string, string ? string.size : 0)
+  ##
+  # Combine two CRC-32 check values in to one. +crc1+ is the first CRC-32
+  # value, +crc2+ is the second CRC-32 value. +len+ is the length of the
+  # string used to generate +crc2+.
+
+  def self.crc32_combine(crc1, crc2, len)
+    z_crc32_combine(crc1, crc2, len)
   end
 
   ##
@@ -1624,6 +1627,5 @@ module Zlib
 
     raise klass, message
   end
-
 end
 
