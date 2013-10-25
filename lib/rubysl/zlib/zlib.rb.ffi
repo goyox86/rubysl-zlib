@@ -1423,6 +1423,27 @@ module Zlib
       self
     end
 
+    ##
+    # Same as IO.
+
+    def puts(*args)
+      @io.puts(*args)
+    end
+
+    ##
+    # Same as IO.
+
+    def print(*args)
+      @io.print(*args)
+    end
+
+    ##
+    # Same as IO.
+
+    def printf(*args)
+      @io.printf(*args)
+    end
+
     def write_raw
       data = @zstream.flush_next_out
 
@@ -1567,6 +1588,8 @@ module Zlib
   # +adler+ is omitted, it assumes that the initial value is given to +adler+.
 
   def self.adler32(string = "", adler = 1)
+    raise RangeError if adler >= (2 ** 128)
+
     z_adler32(adler, string, string.length)
   end
 
@@ -1583,6 +1606,8 @@ module Zlib
   # omitted, it assumes that the initial value is given to +crc+.
 
   def self.crc32(string = "", crc = 0)
+    raise RangeError if crc >= (2 ** 128)
+
     z_crc32(crc, string, string.length)
   end
 
