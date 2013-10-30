@@ -1,3 +1,5 @@
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/goyox86/rubysl-zlib/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
 # Rubysl::Zlib
 
 TODO: Write a gem description
